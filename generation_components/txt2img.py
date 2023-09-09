@@ -5,7 +5,7 @@ from safetensors.torch import load_file
 import os
 from samplers import sampler_list as sm
 
-def generate_image(model, prompt, guidance_scale, width, height, steps, sampler='   ', clip_skip=False, seed=None, negative_prompt=None, output_path="generated_image.png"):
+def generate_image(model, prompt, guidance_scale, width, height, steps, sampler='dpmsolver++', clip_skip=False, seed=None, negative_prompt=None, output_path="generated_image.png"):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
@@ -19,19 +19,14 @@ def generate_image(model, prompt, guidance_scale, width, height, steps, sampler=
     # Set a random seed for reproducibility if seed is provided (fix seed assignment)
     if seed is not None:
         torch.manual_seed(seed)
-    
-    # Define a default sampler if none is provided
-    if sampler is None:
-        def default_sampler(gradient):
-            return gradient
-        
-        sampler = default_sampler
+
     
     # Create an instance of DPM_Solver
     if sampler is 'dpmsolver++':
         sampler_var = sm.dpm_solver_plus(model=model)
     elif sampler is 'dpmsolver':
         sampler_var = sm.dpm_solver(model=model)
+    
     for step in range(steps):
         # Generate a random vector for diversity
         z = torch.randn_like(image)
