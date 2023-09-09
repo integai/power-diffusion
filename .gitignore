@@ -1,3 +1,7 @@
 
 doubleDiffusion.safetensors
 base_models/sd-v1-5-pruned.safetensors
+load_models/__pycache__
+generation_components/__pycache__
+download_components/__pycache__
+samplers/__pycache__
