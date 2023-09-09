@@ -1,15 +1,15 @@
 import torch
 from torchvision.transforms import functional as F
 from diffusers import DDIMPipeline
+from safetensors.torch import load_file
+import os
 
 def generate_image(model, prompt, guidance_scale, width, height, steps, sampler=None, clip_skip=False, seed=None, negative_prompt=None, output_path="generated_image.png"):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
     model.eval()
-
-
-
+    
     if not negative_prompt:
         negative_prompt = ""
     # Initialize the image with random noise
