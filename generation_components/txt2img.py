@@ -3,8 +3,9 @@ from torchvision.transforms import functional as F
 from diffusers import DDIMPipeline
 from safetensors.torch import load_file
 import os
+from samplers import sampler_list as sm
 
-def generate_image(model, prompt, guidance_scale, width, height, steps, sampler=None, clip_skip=False, seed=None, negative_prompt=None, output_path="generated_image.png"):
+def generate_image(model, prompt, guidance_scale, width, height, steps, sampler='   ', clip_skip=False, seed=None, negative_prompt=None, output_path="generated_image.png"):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
@@ -26,12 +27,17 @@ def generate_image(model, prompt, guidance_scale, width, height, steps, sampler=
         
         sampler = default_sampler
     
+    # Create an instance of DPM_Solver
+    if sampler is 'dpmsolver++':
+        sampler_var = sm.dpm_solver_plus(model=model)
+    elif sampler is 'dpmsolver':
+        sampler_var = sm.dpm_solver(model=model)
     for step in range(steps):
         # Generate a random vector for diversity
         z = torch.randn_like(image)
         
         # Calculate the loss with the positive prompt
-        positive_loss = model(image, z, prompt, negative_prompt, guidance_scale)
+        positive_loss = model(image, z, prompt, guidance_scale)
 
         # Calculate the loss with the negative prompt if provided
         if negative_prompt:
@@ -43,13 +49,12 @@ def generate_image(model, prompt, guidance_scale, width, height, steps, sampler=
         # Update the image using gradient ascent
         image.grad = None
         loss.backward()
-        image.data += sampler(image.grad)
-
+        
+        # Use the DPM_Solver to update the image
+        image.data = sampler_var(image, image.grad, sampler)
+        
         # Clip the image values to be in the range [0, 1]
         image.data = torch.clamp(image.data, 0, 1)
-
-        # Apply control net and clip skip (uncomment if needed)
-        # image.data = clip_skip(image.data)
 
     # Convert the generated tensor to a PIL image
     generated_image = F.to_pil_image(image[0].cpu())
